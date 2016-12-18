@@ -30,7 +30,7 @@ Int opadd(Int a, Int b) {
 }
 
 template <class A, class B>
-auto opadd(std::shared_ptr<A> a, std::shared_ptr<B> b) -> decltype(a->opadd(b)) {  # noqa
+auto opadd(std::shared_ptr<A> a, std::shared_ptr<B> b) -> decltype(a->opadd(b)) {
     return a->opadd(b);
 }
 
@@ -49,7 +49,7 @@ std::shared_ptr<CcString> vvstr(std::shared_ptr<CcString> x) {
 template <class T> void vvprint(T s) {
     std::cout << vvstr(s)->buffer << std::endl;
 }
-"""
+"""  # noqa
 
 POSTFIX = r"""
 }  // namespace gclang
