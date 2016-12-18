@@ -13,57 +13,41 @@ using Int = long long;
 using Float = double;
 void vvmain();
 
-class string {
+class CcObject: public std::enable_shared_from_this<CcObject> {};
+
+class CcString: public CcObject {
 public:
-    std::shared_ptr<const std::string> value;
-    string()=default;
-    string(const string&)=default;
-    string(string&&)=default;
-    string(const std::string &s): value(std::make_shared<std::string>(s)) {}
-    string(const char *c): value(std::make_shared<std::string>(c)) {}
-    ~string()=default;
-    string &operator=(const string&)=default;
+    const std::string buffer;
+    CcString(const std::string &s): buffer(s) {}
+
+    std::shared_ptr<CcString> opadd(std::shared_ptr<CcString> other) {
+        return std::make_shared<CcString>(buffer + other->buffer);
+    }
 };
-
-// root garbage collected object.
-class CcObject {
-public:
-    virtual void traverse(void(*)(CcObject*))=0;
-};
-
-std::vector<CcObject**> stack;
-
-long markstack() { return stack.size(); }
-void retstack(long mark) { stack.resize(mark); }
-
-void stackvar(Int) {}
-void stackvar(Float) {}
-void stackvar(const char*) {}
-void stackvar(string) {}
-void stackvar(CcObject *&ptr) { stack.push_back(&ptr); }
 
 Int opadd(Int a, Int b) {
     return a + b;
+}
+
+template <class A, class B>
+auto opadd(std::shared_ptr<A> a, std::shared_ptr<B> b) -> decltype(a->opadd(b)) {  # noqa
+    return a->opadd(b);
 }
 
 Int opsub(Int a, Int b) {
     return a - b;
 }
 
-string opadd(string a, string b) {
-    return string(*(a.value) + *(b.value));
+std::shared_ptr<CcString> vvstr(Int x) {
+    return std::make_shared<CcString>(std::to_string(x));
 }
 
-string vvstr(Int x) {
-    return string(std::to_string(x));
-}
-
-string vvstr(string s) {
-    return s;
+std::shared_ptr<CcString> vvstr(std::shared_ptr<CcString> x) {
+    return x;
 }
 
 template <class T> void vvprint(T s) {
-    std::cout << (*vvstr(s).value) << std::endl;
+    std::cout << vvstr(s)->buffer << std::endl;
 }
 """
 
@@ -189,7 +173,6 @@ PRIMITIVE_TYPES = {
     'void': 'void',
     'int': 'Int',
     'float': 'Float',
-    'string': 'string',
 }
 
 
@@ -257,12 +240,14 @@ class String(Expression):
 
     def cxx(self):
         return ''.join([
+            'std::make_shared<CcString>('
             '"',
             self.value
                 .replace('\\', '\\\\')
                 .replace('\t', '\\t')
                 .replace('\n', '\\n'),
             '"',
+            ')',
         ])
 
 
@@ -280,17 +265,8 @@ class CxxCall(Expression):
         self.args = args
 
     def cxx(self):
-        tempvarnames = [mktempvarname() for _ in range(len(self.args))]
         return ''.join([
-            '([&](){',
-            'const long mark = markstack(); ',
-            ' '.join(''.join([
-                'auto ', name, ' = ', arg.cxx(), '; ',
-                'stackvar(', name, ');'
-            ]) for name, arg in zip(tempvarnames, self.args)),
-            ' retstack(mark);',
-            ' return ', self.fname, '(', ', '.join(tempvarnames), ');',
-            '})()',
+            self.fname, '(', ', '.join(arg.cxx() for arg in self.args), ')'
         ])
 
 
