@@ -13,7 +13,7 @@ closebk = ']'
 SYMBOLS = list(reversed(sorted([
     '\n', '(', ')', '{', '}', '[', ']',
     '+', '-', '*', '%', '/', ',',
-    '=', '\\', '->',
+    '=', '\\', '->', '.',
 ])))
 
 
@@ -23,9 +23,14 @@ PREFIX = r"""
 #include <iostream>
 #include <string>
 #include <memory>
+#include <vector>
+#include <sstream>
 
 using Int = long long;
 using Float = double;
+
+template <class T> class List;
+template <class T> List<T> mklist(const std::initializer_list<T> &v);
 
 struct String final {
     std::shared_ptr<std::string> buffer;
@@ -34,6 +39,40 @@ struct String final {
     String(const std::string &s): buffer(std::make_shared<std::string>(s)) {}
     String str() const { return *this; }
 };
+
+template <class T>
+struct List final {
+    std::shared_ptr<std::vector<T>> buffer;
+    List()=default;
+    List(const List&)=default;
+    List(const std::vector<T> &v): buffer(std::make_shared<std::vector<T>>(v)) {}
+    String str() const {
+        std::stringstream ss;
+        ss << "List(";
+        if (!buffer->empty()) {
+            ss << (*buffer)[0];
+            for (unsigned int i = 1; i < buffer->size(); i++) {
+                ss << ", " << (*buffer)[i];
+            }
+        }
+        ss << ")";
+        return String(ss.str());
+    }
+
+    template <class F>
+    auto rrmap(F f) const {
+        auto ret = mklist<decltype(f((*buffer)[0]))>({});
+        for (T t: (*buffer)) {
+            ret.buffer->push_back(f(t));
+        }
+        return ret;
+    }
+};
+
+template <class T>
+List<T> mklist(const std::initializer_list<T> &v) {
+    return List<T>(std::vector<T>(v));
+}
 
 struct {
     template <class T>
@@ -272,6 +311,14 @@ def parse(s):
                     consume(',')
                 e = '(%s)(%s)' % (e, ', '.join(args))
                 continue
+            if consume('.'):
+                name = 'rr' + expect('NAME').value
+                args = []
+                expect(openpar)
+                while not consume(closepar):
+                    args.append(pexpr())
+                    consume(',')
+                e = '(%s).%s(%s)' % (e, name, ', '.join(args))
             break
         return e
 
@@ -290,6 +337,12 @@ def parse(s):
                     .replace('\t', '\\t')
                     .replace('\n', '\\n'),
                 '")'])
+        if consume(openbk):
+            args = []
+            while not consume(closebk):
+                args.append(pexpr())
+                consume(',')
+            return ''.join(['mklist({', ', '.join(args), '})'])
         if consume('\\'):
             names = []
             while at('NAME'):
@@ -340,4 +393,6 @@ var g = \ a b {
 }
 print(g(2, 3))
 print(2.2)
+print([1, 2, 3])
+print([1, 2, 3].map(\ x -> x + 1))
 """))
