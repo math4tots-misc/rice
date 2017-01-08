@@ -1,0 +1,14 @@
+print("Hello world!")
+print(1 + 2)
+var x = 5
+print(x)
+var f = \ a b -> a + b
+print(f(1, 2))
+var g = \ a b {
+    var c = a * b
+    return a + b + c
+}
+print(g(2, 3))
+print(2.2)
+print([1, 2, 3])
+print([1, 2, 3].map(\ x -> x + 1))

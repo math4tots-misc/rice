@@ -1,6 +1,7 @@
 """
 Simple language with no explicit typing that translates to C++14
 """
+import sys
 
 openbr = '{'
 closebr = '}'
@@ -37,7 +38,7 @@ struct String final {
     String()=default;
     String(const String&)=default;
     String(const std::string &s): buffer(std::make_shared<std::string>(s)) {}
-    String str() const { return *this; }
+    String rrstr() const { return *this; }
 };
 
 template <class T>
@@ -46,7 +47,7 @@ struct List final {
     List()=default;
     List(const List&)=default;
     List(const std::vector<T> &v): buffer(std::make_shared<std::vector<T>>(v)) {}
-    String str() const {
+    String rrstr() const {
         std::stringstream ss;
         ss << "List(";
         if (!buffer->empty()) {
@@ -77,7 +78,7 @@ List<T> mklist(const std::initializer_list<T> &v) {
 struct {
     template <class T>
     auto operator()(T t) {
-        return t.str();
+        return t.rrstr();
     }
 
     auto operator()(Int t) {
@@ -379,20 +380,4 @@ def parse(s):
 
     return pprog()
 
-
-print(parse(r"""
-print("Hello world!")
-print(1 + 2)
-var x = 5
-print(x)
-var f = \ a b -> a + b
-print(f(1, 2))
-var g = \ a b {
-    var c = a * b
-    return a + b + c
-}
-print(g(2, 3))
-print(2.2)
-print([1, 2, 3])
-print([1, 2, 3].map(\ x -> x + 1))
-"""))
+print(parse(sys.stdin.read()))
