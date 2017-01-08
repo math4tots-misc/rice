@@ -4,6 +4,22 @@ def foo(x) {
   print("Inside foo")
 }
 
+def rec2(f, x) {
+  return f(rec2, x - 7)
+}
+
+def rec1(f, x) {
+  if (x < 3) {
+    return x
+  } else {
+    return f(rec1, x - 13)
+  }
+}
+
+def rec(x) {
+  return rec1(rec2, x)
+}
+
 def main() {
   print("Hello world!")
   print(1 + 2)
@@ -21,4 +37,12 @@ def main() {
   print([1, 2, 3].map(\ x -> x + 1))
   foo(15)
   foo("This is X")
+
+  if x > 10 {
+    print("x > 10")
+  } else {
+    print("x > 10 is false")
+  }
+
+  print(rec(10))
 }

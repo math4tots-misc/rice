@@ -13,13 +13,16 @@ closebk = ']'
 
 SYMBOLS = list(reversed(sorted([
     '\n', '(', ')', '{', '}', '[', ']',
+    '<', '>', '<=', '>=', '==', '!=',
+    '=', '+=' ,'*=', '-=', '/=', '%=',
     '+', '-', '*', '%', '/', ',',
-    '=', '\\', '->', '.',
+    '\\', '->', '.',
 ])))
 
 
 KEYWORDS = {
     'include', 'import',
+    'if', 'else',
     'def', 'class', 'while', 'return', 'var'
 }
 
@@ -270,6 +273,14 @@ def parse(s):
             b = pblock()
             consumenl()
             return b
+        elif consume('if'):
+            cond = pexpr()
+            body = pstmt()
+            if consume('else'):
+                other = pstmt()
+                return '\nif (%s)%s\nelse%s' % (cond, body, other)
+            else:
+                return '\nif (%s)%s' % (cond, body)
         else:
             e = pexpr()
             consumenl()
@@ -286,7 +297,43 @@ def parse(s):
         return '\n{%s\n}' % (''.join(stmts).replace('\n', '\n  '))
 
     def pexpr():
-        return pexpr3()
+        return pexpr5()
+
+    def pexpr5():
+        e = pexpr4()
+        while True:
+            if consume('=='):
+                r = pexpr4()
+                e = '(%s) == (%s)' % (e, r)
+                continue
+            if consume('!='):
+                r = pexpr4()
+                e = '(%s) != (%s)' % (e, r)
+                continue
+            break
+        return e
+
+    def pexpr4():
+        e = pexpr3()
+        while True:
+            if consume('<'):
+                r = pexpr3()
+                e = '(%s) < (%s)' % (e, r)
+                continue
+            if consume('<='):
+                r = pexpr3()
+                e = '(%s) <= (%s)' % (e, r)
+                continue
+            if consume('>'):
+                r = pexpr3()
+                e = '(%s) > (%s)' % (e, r)
+                continue
+            if consume('>='):
+                r = pexpr3()
+                e = '(%s) >= (%s)' % (e, r)
+                continue
+            break
+        return e
 
     def pexpr3():
         e = pexpr2()
